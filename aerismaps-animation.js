@@ -372,7 +372,6 @@ window.AerisMaps = window.AerisMaps || {};
 		} else {
 			this._toOffset = config.animation.to * 1000;
 		}
-		console.log(config);
 
 		this.target = (typeof target == 'string') ? Dom.select(target) : Dom.extend(target);
 		this.config = config;
