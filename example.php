@@ -42,7 +42,7 @@ $layers = explode(',', $layers);
 	}
 
 	/* customize the timestamp element that's added to the map when `overlays.timestamp` is set */
-	.amp-map .timestamp {
+	.amp-map-timestamp {
 		position: absolute;
 		bottom: 5px;
 		left: 7px;
@@ -51,7 +51,7 @@ $layers = explode(',', $layers);
 	}
 
 	/* customize the title element that's added to the map when `overlays.title` is set */
-	.amp-map .title {
+	.amp-map-title {
 		position: absolute;
 		top: 10px;
 		left: 10px;
@@ -87,8 +87,8 @@ var animator = new AerisMaps.Animation('#map', {
 		layers: <?php echo json_encode($layers); ?>
 	},
 	animation: {
-		from: new Date(now.getTime() + <?php echo $from; ?> * 3600 * 1000),
-		to: new Date(now.getTime() + <?php echo $to; ?> * 3600 * 1000),
+		from: <?php echo $from; ?> * 3600,
+		to: <?php echo $to; ?> * 3600,
 		intervals: <?php echo $intervals; ?>,
 		duration: <?php echo $duration; ?>
 	},

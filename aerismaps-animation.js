@@ -348,17 +348,22 @@ window.AerisMaps = window.AerisMaps || {};
 			}
 		}, options);
 
+		var now = new Date().getTime();
+
 		if (isDate(config.animation.from)) {
+			this._fromOffset = null;
 			config.animation.from = config.animation.from.getTime();
 		} else {
-			config.animation.from *= 1000;
+			this._fromOffset = config.animation.from * 1000;
 		}
 
 		if (isDate(config.animation.to)) {
+			this._toOffset = null;
 			config.animation.to = config.animation.to.getTime();
 		} else {
-			config.animation.to *= 1000;
+			this._toOffset = config.animation.to * 1000;
 		}
+		console.log(config);
 
 		this.target = (typeof target == 'string') ? Dom.select(target) : Dom.extend(target);
 		this.config = config;
@@ -401,8 +406,8 @@ window.AerisMaps = window.AerisMaps || {};
 			});
 			this.target.ext.addClass('amp-map');
 
-			this.target.ext.append('<div class="content"></div>');
-			var contentTarget = this.target.ext.select('.content');
+			this.target.ext.append('<div class="amp-map-content"></div>');
+			var contentTarget = this.target.ext.select('.amp-map-content');
 			contentTarget.ext.css({
 				position: 'absolute',
 				top: 0,
@@ -422,8 +427,8 @@ window.AerisMaps = window.AerisMaps || {};
 			}
 
 			if (this.config.overlays.timestamp) {
-				this.target.ext.append('<div class="timestamp"></div>');
-				this._timestamp = this.target.ext.select('.timestamp');
+				this.target.ext.append('<div class="amp-map-timestamp"></div>');
+				this._timestamp = this.target.ext.select('.amp-map-timestamp');
 
 				var ts = this.config.overlays.timestamp;
 				if (typeof ts == 'object' && undefined != ts.continuous) {
@@ -442,7 +447,7 @@ window.AerisMaps = window.AerisMaps || {};
 				});
 			}
 			if (this.config.overlays.title) {
-				this.target.ext.append('<div class="title">' + this.config.overlays.title + '</div>');
+				this.target.ext.append('<div class="amp-map-title">' + this.config.overlays.title + '</div>');
 			}
 		}
 	};
@@ -623,9 +628,19 @@ window.AerisMaps = window.AerisMaps || {};
 	};
 
 	Animation.prototype._loadData = function() {
+		// if from and to were offsets and not dates, then we need to update the date time values before loading new data
+		var now = new Date().getTime();
+		if (null != this._fromOffset) {
+			this._from = now + this._fromOffset;
+			this._time = this._from;
+		}
+		if (null != this._toOffset) {
+			this._to = now + this._toOffset;
+		}
+
 		// calculate time intervals needed
 		var totalIntervals = this._intervals;
-		var interval = (this._to - this._from) / totalIntervals;
+		var interval = Math.round((this._to - this._from) / totalIntervals);
 		var times = [];
 		var lastTime = null;
 		for (var i = 0; i < totalIntervals; i++) {
