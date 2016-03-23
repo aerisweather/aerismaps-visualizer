@@ -192,6 +192,15 @@ window.AerisMaps = window.AerisMaps || {};
 
 		return this;
 	};
+	Dom.prototype.remove = function() {
+		this.el.parentNode.removeChild(this.el);
+	};
+	Dom.prototype.empty = function() {
+		while (this.el.firstChild) {
+			this.el.removeChild(this.el.firstChild);
+		}
+		return this;
+	};
 
 	Dom.select = function(selector, el) {
  		if (typeof selector != 'string') return selector;
@@ -515,12 +524,16 @@ window.AerisMaps = window.AerisMaps || {};
 		this._offset = time - this._from;
 
 		var image = this._imageClosestToTime(this._time);
-		if (image && image != this._currentImage) {
-			image.ext.show();
-			if (this._currentImage) {
-				this._currentImage.ext.hide();
+		if (image) {
+			if (image != this._currentImage) {
+				image.ext.show();
+				if (this._currentImage && this._currentImage.ext) {
+					this._currentImage.ext.hide();
+				}
+				this._currentImage = image;
 			}
-			this._currentImage = image;
+		} else if (!this.isAnimating()) {
+			this._loadInterval(time, false);
 		}
 		this.trigger('advance', { time: this._time, offset: this._offset });
 	};
@@ -590,7 +603,6 @@ window.AerisMaps = window.AerisMaps || {};
 
 		if (closest != this._lastImageTime && this._images[closest]) {
 			image = this._images[closest];
-
 			closest = Math.round(closest);
 			this._lastImageTime = closest;
 			this.trigger('advance:image', { time: closest, img: image });
@@ -638,6 +650,9 @@ window.AerisMaps = window.AerisMaps || {};
 			this._to = now + this._toOffset;
 		}
 
+		this._images = {};
+		this._contentTarget.ext.empty();
+
 		// calculate time intervals needed
 		var totalIntervals = this._intervals;
 		var interval = Math.round((this._to - this._from) / totalIntervals);
@@ -657,7 +672,7 @@ window.AerisMaps = window.AerisMaps || {};
 		var self = this;
 		var loadingInterval = 0;
 		var loadNextInterval = function() {
-			self._loadInterval(times[loadingInterval], function() {
+			self._loadInterval(times[loadingInterval], true, function() {
 				loadingInterval++;
 				if (loadingInterval >= times.length) {
 					self.trigger('load:done');
@@ -680,7 +695,7 @@ window.AerisMaps = window.AerisMaps || {};
 		loadNextInterval();
 	};
 
-	Animation.prototype._loadInterval = function(interval, callback) {
+	Animation.prototype._loadInterval = function(interval, cache, callback) {
 		var opts = this.config;
 		var date = new Date(interval);
 		var gmtDate = new Date(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
@@ -708,7 +723,7 @@ window.AerisMaps = window.AerisMaps || {};
 				self._contentTarget.ext.append(img);
 
 				var el = Dom.select('#amp-' + interval);
-				if (el) {
+				if (el && cache) {
 					self._images[interval] = el;
 				}
 				if (self._currentImage && self._currentImage.ext) {
