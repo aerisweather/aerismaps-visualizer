@@ -1,0 +1,27 @@
+.amp-map {
+	background: #efefef;
+}
+
+/* customize the timestamp element that's added to the map when `overlays.timestamp` is set */
+.amp-map-timestamp {
+	position: absolute;
+	bottom: 5px;
+	left: 7px;
+	font-size: 14px;
+	color: #222;
+}
+
+/* customize the title element that's added to the map when `overlays.title` is set */
+.amp-map-title {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	width: 300px;
+	height: 40px;
+	font-size: 22px;
+	background: rgba(255,255,255,0.8);
+	color: #222;
+	line-height: 44px;
+	padding: 0 15px;
+	border-bottom: 3px solid #0097e2;
+}
