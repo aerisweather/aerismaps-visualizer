@@ -31,40 +31,11 @@ $layers = explode(',', $layers);
     <meta name="description" content="Demo project">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
+	<link href="./aerismaps-animation.css" rel="stylesheet" type="text/css">
 	<style type="text/css">
-
 	body {
 		font-family: "Helvetica","Arial",sans-serif;
 	}
-
-	.amp-map {
-		background: #efefef;
-	}
-
-	/* customize the timestamp element that's added to the map when `overlays.timestamp` is set */
-	.amp-map-timestamp {
-		position: absolute;
-		bottom: 5px;
-		left: 7px;
-		font-size: 14px;
-		color: #222;
-	}
-
-	/* customize the title element that's added to the map when `overlays.title` is set */
-	.amp-map-title {
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		width: 300px;
-		height: 40px;
-		font-size: 22px;
-		background: rgba(255,255,255,0.8);
-		color: #222;
-		line-height: 44px;
-		padding: 0 15px;
-		border-bottom: 3px solid #0097e2;
-	}
-
 	</style>
 
 </head>
@@ -82,6 +53,7 @@ var animator = new AerisMaps.Animation('#map', {
 		id: '',
 		secret: ''
 	},
+	autoplay: true,
 	map: {
 		zoom: <?php echo $zoom; ?>,
 		layers: <?php echo json_encode($layers); ?>
@@ -106,8 +78,6 @@ animator.on('advance', function(data) {
 animator.on('load:progress', function(data) {
 	console.log('load progress: ' + data.loaded/data.total);
 });
-
-animator.play();
 
 </script>
 
