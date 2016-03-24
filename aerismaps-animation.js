@@ -1,8 +1,9 @@
 
-
-window.AerisMaps = window.AerisMaps || {};
-
 (function(window, document) {
+	"use strict";
+
+	var AerisMaps = window.AerisMaps || {};
+	window.AerisMaps = AerisMaps;
 
 	/**
 	 * Base Events object
@@ -14,9 +15,13 @@ window.AerisMaps = window.AerisMaps || {};
 		var numToRemove, numToCall;
 
 		events.on = function (event, callback, context) {
-			if (!listeners[event]) listeners[event] = [];
+			if (!listeners[event]) {
+				listeners[event] = [];
+			}
 			listeners[event].push(callback);
-			if (context) contexts[callback] = context;
+			if (context) {
+				contexts[callback] = context;
+			}
 		};
 		events.off = function (event, callback, deferred) {
 			if (!deferred) {
@@ -35,18 +40,21 @@ window.AerisMaps = window.AerisMaps || {};
 				return;
 			}
 
+			var i, len, fn;
 			if (listeners[event]) {
-				var i = 0, len = listeners[event].length;
+				i = 0;
+				len = listeners[event].length;
 				while (i < len) {
-					var fn = listeners[event][i];
+					fn = listeners[event][i];
 					fn.call(contexts[fn], data);
 					i++;
 				}
 			}
 
 			if (numToRemove > 0) {
-				for (var i = 0; i < numToRemove; i++) {
-					var r = toRemove[i];
+				var r;
+				for (i = 0; i < numToRemove; i += 1) {
+					r = toRemove[i];
 					events.off(r[0], r[1], false);
 				}
 				toRemove = [];
@@ -64,10 +72,10 @@ window.AerisMaps = window.AerisMaps || {};
 			events.offAll = function (event, deferred) {
 				var es = listeners[event];
 				var len = es.length;
-				for (var i = 0; i < len; i++) {
+				for (var i = 0; i < len; i += 1) {
 					events.off(event, es[i], deferred);
 				}
-			}
+			};
 		}
 
 		return events;
@@ -87,6 +95,43 @@ window.AerisMaps = window.AerisMaps || {};
 		}
 		return el;
  	};
+
+ 	var getStyle = function(el, prop) {
+		var value, defaultView = el.ownerDocument.defaultView;
+		// W3C standard method
+		if (defaultView && defaultView.getComputedStyle) {
+			// sanitize property name to css notation (hyphen separate words)
+			prop = prop.replace(/([A-Z])/g, "-$1").toLowerCase();
+
+			return defaultView.getComputedStyle(el, null).getPropertyValue(prop);
+		}
+		// IE method
+		else if (el.currentStyle) {
+			// sanitize property name to camelCase
+			prop = prop.replace(/\-(\w)/g, function(str, letter) {
+				return letter.toUpperCase();
+			});
+			value = el.currentStyle[prop];
+
+			// convert other units to pixels in IE
+			if (/^\d+(em|pt|%|ex)?$/i.test(value)) {
+				return (function(value) {
+					var oldLeft = el.style.left;
+					var oldRsLeft = el.runtimeStyle.left;
+
+					el.runtimeStyle.left = el.currentStyle.left;
+					el.style.left = value || 0;
+					value = el.style.pixelLeft + 'px';
+
+					el.style.left = oldLeft;
+					el.runtimeStyle.left = oldRsLeft;
+
+					return value;
+				})(value);
+			}
+		}
+		return value;
+	};
 
 	var Dom = function(el) {
 		this.el = el;
@@ -108,7 +153,7 @@ window.AerisMaps = window.AerisMaps || {};
 	};
 	Dom.prototype.css = function(property, value) {
 		if (typeof property == 'string') {
-			if (value == null) {
+			if (value === null) {
 				return getStyle(this.el, property);
 			}
 			this.el.style[property] = value;
@@ -121,7 +166,7 @@ window.AerisMaps = window.AerisMaps || {};
 	};
 	Dom.prototype.addClass = function(cls) {
 		var el = this.el;
-		if (undefined != cls && cls != '') {
+		if (undefined !== cls && cls !== '') {
 			if (el.classList) {
 				cls = (cls.match(/\s/)) ? cls.split(' ') : [cls];
 				cls.forEach(function(c) {
@@ -139,7 +184,7 @@ window.AerisMaps = window.AerisMaps || {};
 	};
 	Dom.prototype.removeClass = function(cls) {
 		var el = this.el;
-		if (undefined != cls && cls != '') {
+		if (undefined !== cls && cls !== '') {
 			if (el.classList) {
 				cls = (cls.match(/\s/)) ? cls.split(' ') : [cls];
 				cls.forEach(function(c) {
@@ -161,7 +206,7 @@ window.AerisMaps = window.AerisMaps || {};
 		return this;
 	};
 	Dom.prototype.hasClass = function(cls) {
-		if (undefined == cls || cls == '') {
+		if (undefined === cls || cls === '') {
 			return false;
 		}
 		if (this.el.classList) {
@@ -175,7 +220,7 @@ window.AerisMaps = window.AerisMaps || {};
 		if (typeof el == 'string') {
 			el = stringToDOM(html);
 		}
-		if (undefined == el.ext) {
+		if (undefined === el.ext) {
 			Dom.extend(el);
 		}
 		return el;
@@ -213,11 +258,9 @@ window.AerisMaps = window.AerisMaps || {};
 		}
 
 		var els = Array.prototype.slice.call(el.querySelectorAll(selector));
-		(function(self) {
-			els.forEach(function(el, idx) {
-				Dom.extend(el);
-			});
-		})(this);
+		els.forEach(function(el) {
+			Dom.extend(el);
+		});
 
 		if (els.length == 1) {
 			els = els[0];
@@ -265,7 +308,7 @@ window.AerisMaps = window.AerisMaps || {};
 	};
 	var isDate = function(date) {
 		return date.constructor.toString().indexOf("Date") > -1;
-	}
+	};
 	var formatDate = function(date, format) {
 		var hours = date.getHours();
 		var ttime = "AM";
@@ -284,7 +327,7 @@ window.AerisMaps = window.AerisMaps || {};
 			"q+": Math.floor((date.getMonth() + 3) / 3),  //quarter
 			"S": date.getMilliseconds(), //millisecond,
 			"t+": ttime
-		}
+		};
 
 		if (/(y+)/.test(format)) {
 			format = format.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
@@ -357,8 +400,6 @@ window.AerisMaps = window.AerisMaps || {};
 			}
 		}, options);
 
-		var now = new Date().getTime();
-
 		if (isDate(config.animation.from)) {
 			this._fromOffset = null;
 			config.animation.from = config.animation.from.getTime();
@@ -394,7 +435,7 @@ window.AerisMaps = window.AerisMaps || {};
 		if (!config.keys.id || config.keys.id.length == 0 || !config.keys.secret || config.keys.secret.length == 0) {
 			throw new InvalidArgumentException('Invalid configuration values for "keys.id" and/or "keys.secret"');
 		} else if (!config.loc || config.loc.length == 0) {
-			throw new InvalidArgumentException('Invalid configuration value for "loc"')
+			throw new InvalidArgumentException('Invalid configuration value for "loc"');
 		} else {
 			this.init();
 		}
@@ -439,7 +480,7 @@ window.AerisMaps = window.AerisMaps || {};
 				this._timestamp = this.target.ext.select('.amp-map-timestamp');
 
 				var ts = this.config.overlays.timestamp;
-				if (typeof ts == 'object' && undefined != ts.continuous) {
+				if (typeof ts == 'object' && undefined !== ts.continuous) {
 					if (ts.continuous === false) {
 						this.on('advance:image', function(data) {
 							self._updateTimestampOverlay(data.time);
@@ -507,7 +548,7 @@ window.AerisMaps = window.AerisMaps || {};
 				self.play();
 			}, self._endDelay * 1000);
 		})(this);
-	}
+	};
 
 	Animation.prototype.pause = function() {
 		this._paused = true;
@@ -563,7 +604,7 @@ window.AerisMaps = window.AerisMaps || {};
 
 	Animation.prototype.setStartDate = function(start) {
 		this.stop();
-		this._from = isDate(start) ? state.getTime() : start;
+		this._from = isDate(start) ? start.getTime() : start;
 		this._updateTiming();
 		this._images = {};
 	};
@@ -574,7 +615,7 @@ window.AerisMaps = window.AerisMaps || {};
 
 	Animation.prototype.setEndDate = function(end) {
 		this.stop();
-		this._to = isDate(start) ? state.getTime() : start;
+		this._to = isDate(end) ? end.getTime() : end;
 		this._updateTiming();
 		this._images = {};
 	};
@@ -612,7 +653,7 @@ window.AerisMaps = window.AerisMaps || {};
 
 	Animation.prototype._hasImages = function() {
 		var o = this._images;
-		if (o == null) return false;
+		if (o === null) return false;
 
 		var hasProps = false;
 		for (var key in o) {
@@ -641,11 +682,11 @@ window.AerisMaps = window.AerisMaps || {};
 	Animation.prototype._loadData = function() {
 		// if from and to were offsets and not dates, then we need to update the date time values before loading new data
 		var now = new Date().getTime();
-		if (null != this._fromOffset) {
+		if (null !== this._fromOffset) {
 			this._from = now + this._fromOffset;
 			this._time = this._from;
 		}
-		if (null != this._toOffset) {
+		if (null !== this._toOffset) {
 			this._to = now + this._toOffset;
 		}
 
