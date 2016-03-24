@@ -362,6 +362,7 @@
 				secret: null
 			},
 			refresh: 0,
+			autoplay: false,
 			events: {
 				click: function() {
 					if (self.isPaused() || !self.isAnimating()) {
@@ -497,6 +498,10 @@
 			}
 			if (this.config.overlays.title) {
 				this.target.ext.append('<div class="amp-map-title">' + this.config.overlays.title + '</div>');
+			}
+
+			if (this.config.autoplay) {
+				this.play();
 			}
 		}
 	};
