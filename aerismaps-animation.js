@@ -502,6 +502,20 @@
 
 			if (this.config.autoplay) {
 				this.play();
+			} else {
+				// determine the time interval to display initially before animation begins
+				var now = new Date().getTime();
+				var start = (undefined !== this._fromOffset) ? now + this._fromOffset : this._from;
+				var end = (undefined !== this._toOffset) ? now + this._toOffset : this._to;
+				var time = now;
+
+				if (start >= now) {
+					time = start;
+				} else if (end <= now) {
+					time = end;
+				}
+
+				this.goToTime(time);
 			}
 		}
 	};
