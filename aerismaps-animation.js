@@ -364,7 +364,7 @@
 			refresh: 0,
 			events: {
 				click: function() {
-					if (self.isPaused()) {
+					if (self.isPaused() || !self.isAnimating()) {
 						self.play();
 					} else {
 						self.pause();
