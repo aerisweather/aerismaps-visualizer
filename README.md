@@ -44,6 +44,7 @@ Option | Default | Description
 **keys.id** | undefined | [string] Your project's ID provided when [registering with the API](http://www.aerisweather.com/support/docs/aeris-maps/getting-started/access-authentication/)
 **keys.secret** | undefined | [string] Your project's secret key provided when [registering with the API](http://www.aerisweather.com/support/docs/aeris-maps/getting-started/access-authentication/)
 **refresh** | 0 | [integer] Interval (in seconds) when the animation data is reloaded; a value of `0` will disable reloading
+**autoplay** | false | [boolean] Whether or not the animation should start playing immediately when instantiated; if `false`, then you must call `play()` on your animation to being playback
 **events.click** | Function | [function] A callback function called when the animation container DOM element is clicked
 **map.zoom** | 6 | [integer] Map zoom level
 **map.format** | jpg | [string] [Image format](http://www.aerisweather.com/support/docs/aeris-maps/getting-started/image-quality/) for the map
@@ -107,6 +108,38 @@ The following is an example configuration object with default values:
 		}
 	}
 	
+## Public Properties
+
+The following public properties are available on your `Animation` instance:
+
+Property | Description
+-------- | -----------
+**target** | The DOM element containing the animation's content
+**config** | The config object that the animation was instantiated with
+**duration** | The animation's duration in seconds
+
+## Public Methods
+
+The following public methods are available on your `Animation` instance for controlling its playback once configured:
+
+Method | Description
+------ | -----------
+**play()** | Starts the animation; loads the required imagery before playing if needed
+**stop()** | Stops the animation and advances the playhead to the end of the timeline
+**pause()** | Stops playing the animation at the current position; calling `play()` after pausing will resume playback at the paused position
+**restart()** | Restarts playback of the animation from the beginning
+**goToTime(time)** | Moves the timeline's position to the specified time interval (integer)
+**isAnimating()** | Returns a Boolean indicating whether the animation is currently playing
+**isPaused()** | Returns a Boolean indicating whether the animation is currently paused
+**totalTime()** | Returns the total time range, in seconds, that the animation timeline covers (different between ending and starting time intervals)
+**currentTime()** | Returns the current time interval for the animation's timeline
+**position()** | Returns the current position of the animation, from 0 (beginning) to 1 (end)
+**startDate()** | Returns a `Date` object for the animation timeline's `from` interval
+**setStartDate(start)** | Updates the animation timeline's starting interval; can either be a `Date` instance or epoch time interval
+**endDate()** | Returns a `Date` object for the animation timeline's `to` interval
+**setEndDate(end)** | Updates the animation timeline's ending interval; can either be a `Date` instance or epoch time interval
+
+
 ## Events
 
 You can listen for certain events from your `Animation` instance to perform custom actions. Many events also pass an object as a single argument to their registered callback with additional information about the event. The following events are currently supported:
