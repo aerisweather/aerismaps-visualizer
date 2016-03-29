@@ -865,7 +865,23 @@
 
 	window.AerisMaps.Animation = Animation;
 
-	// inject animator CSS into the DOM
-	Dom.select('head').ext.append('<link href="//cdn.aerisapi.com/css/aerismaps-animation.css" rel="stylesheet" type="text/css"/>');
+	// inject animator CSS into the DOM, but only if it hasn't already been included
+	var css = 'aerismaps-animation.css',
+		links = Dom.select('link'),
+		include = true,
+		re = new RegExp(css);
+
+	var link;
+	for (var i = 0, len = links.length; i < len; i++) {
+		link = links[i];
+		if (re.test(link.href)) {
+			include = false;
+			break;
+		}
+	}
+
+	if (include) {
+		Dom.select('head').ext.append('<link href="//cdn.aerisapi.com/css/' + css + '" rel="stylesheet" type="text/css"/>');
+	}
 
 })(window, document);
