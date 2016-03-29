@@ -6,79 +6,206 @@
 	window.AerisMaps = AerisMaps;
 
 	/**
-	 * Base Events object
+	 * Private utility functions
 	 */
-	var Events = function(obj, blockGlobalRemoval) {
-		var events = obj || {};
-		var listeners = {}, contexts = {}, triggerLock = false;
-		var toRemove = [], toCall = [];
-		var numToRemove, numToCall;
-
-		events.on = function (event, callback, context) {
-			if (!listeners[event]) {
-				listeners[event] = [];
-			}
-			listeners[event].push(callback);
-			if (context) {
-				contexts[callback] = context;
-			}
-		};
-		events.off = function (event, callback, deferred) {
-			if (!deferred) {
-				if (listeners[event]) {
-					listeners[event].splice(callback, 1);
-				}
-			} else {
-				toRemove.push(arguments);
-				numToRemove = toRemove.length;
-			}
-		};
-		events.trigger = function (event, data, deferred) {
-			if (deferred) {
-				toCall.push(arguments);
-				numToCall = toCall.length;
-				return;
-			}
-
-			var i, len, fn;
-			if (listeners[event]) {
-				i = 0;
-				len = listeners[event].length;
-				while (i < len) {
-					fn = listeners[event][i];
-					fn.call(contexts[fn], data);
-					i++;
+	var extend = function(target, object) {
+		for (var i in object) {
+			if (object.hasOwnProperty(i)) {
+				if (typeof target[i] == "object" && target.hasOwnProperty(i) && target[i] != null) {
+					extend(target[i], object[i]);
+				} else {
+					target[i] = object[i];
 				}
 			}
+		}
+		return target;
+	};
+	var keys = function(o) {
+		if (typeof o != 'object') return [];
+		var keys = [];
+    	for (var key in o) if (hasOwnProperty.call(o, key)) keys.push(key);
+    	return keys;
+	};
+	var isDate = function(date) {
+		return date.constructor.toString().indexOf("Date") > -1;
+	};
+	var formatDate = function(date, format) {
+		var hours = date.getHours();
+		var ttime = "AM";
 
-			if (numToRemove > 0) {
-				var r;
-				for (i = 0; i < numToRemove; i += 1) {
-					r = toRemove[i];
-					events.off(r[0], r[1], false);
-				}
-				toRemove = [];
-				numToRemove = 0;
-			}
-
-			if (numToCall > 0) {
-				var nc = toCall.shift();
-				numToCall = toCall.length;
-				events.trigger(nc[0], nc[1]);
-			}
-		};
-
-		if (!blockGlobalRemoval) {
-			events.offAll = function (event, deferred) {
-				var es = listeners[event];
-				var len = es.length;
-				for (var i = 0; i < len; i += 1) {
-					events.off(event, es[i], deferred);
-				}
-			};
+		if (format.indexOf("t") > -1 && hours > 12) {
+			hours = hours - 12;
+			ttime = "PM";
 		}
 
-		return events;
+		var o = {
+			"M+": date.getMonth() + 1, //month
+			"d+": date.getDate(),    //day
+			"h+": hours,   //hour
+			"m+": date.getMinutes(), //minute
+			"s+": date.getSeconds(), //second
+			"q+": Math.floor((date.getMonth() + 3) / 3),  //quarter
+			"S": date.getMilliseconds(), //millisecond,
+			"t+": ttime
+		};
+
+		if (/(y+)/.test(format)) {
+			format = format.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+		}
+
+		for (var k in o) {
+			if (new RegExp("(" + k + ")").test(format)) {
+				format = format.replace(RegExp.$1, RegExp.$1.length == 1 ? o[k] : ("00" + o[k]).substr(("" + o[k]).length));
+			}
+		}
+		return format;
+	};
+	var parseTemplate = function(tpl, data) {
+		var val = tpl;
+		for (var key in data) {
+			val = val.replace('{{' + key + '}}', data[key]);
+		}
+		return val;
+	};
+	var update = function(obj) {
+		var len = arguments.length;
+		if (len < 2 || obj == null) return obj;
+
+		for (var i = 1; i < len; i++) {
+			var source = arguments[i];
+			var k = keys(source), l = k.length;
+			for (var j = 0; j < l; j++) {
+				var key = k[j];
+				if (obj[key] === void 0) obj[key] = source[key];
+			}
+		}
+
+		return obj;
+	};
+
+
+	/**
+	 * Base Events object
+	 */
+	var triggerEvents = function(events, args) {
+		var ev, i = -1, len = events.length;
+		var a1 = args[0], a2 = args[1], a3 = args[2];
+
+		switch (args.length) {
+			case 0:
+				while (++i < len) {
+					(ev = events[i]).callback.call(ev.ctx);
+				}
+				return;
+			case 1:
+				while (++i < len) {
+					(ev = events[i]).callback.call(ev.ctx, a1);
+				}
+				return;
+			case 2:
+				while (++i < len) {
+					(ev = events[i]).callback.call(ev.ctx, a1, a2);
+				}
+				return;
+			case 3:
+				while (++i < len) {
+					(ev = events[i]).callback.call(ev.ctx, a1, a2, a3);
+				}
+				return;
+			default:
+				while (++i < len) {
+					(ev = events[i]).callback.apply(ev.ctx, args);
+				}
+				return;
+		}
+	};
+	var Events = {
+		on: function(event, callback, context) {
+			if (!this._events) {
+				this._events = {};
+			}
+
+			var events = this._events[event] || (this._events[event] = []);
+			events.push({ callback: callback, context: context, ctx: context || this });
+
+			return this;
+		},
+
+		once: function(event, callback, context) {
+			var self = this;
+			var once = _.once(function() {
+				self.off(event, once);
+				callback.apply(this, arguments);
+			});
+			once._callback = callback;
+
+			return this.on(event, once, context);
+		},
+
+		off: function(event, callback, context) {
+			// removes all callbacks for all events
+			if (!event && !callback && !context) {
+				this._events = undefined;
+				return this;
+			}
+
+			var names = (event) ? [event] : _.keys(this._events);
+			var name;
+			for (var i = 0, len = names.lenght; i < len; i++) {
+				name = names[i];
+				var events = this._events[name];
+				if (!events) continue;
+
+				// remove all callbacks for this event
+				if (!callback && !context) {
+					delete this._events[name];
+					continue;
+				}
+
+				// find any remaining events
+				var remaining = [];
+				for (var j = 0, k = events.length; j < k; j++) {
+					var e = events[j];
+					if (callback && callback !== e.callback && callback !== e.callback._callback || context && context !== e.context) {
+						remaining.push(e);
+					}
+				}
+
+				// replace events if there are any remaining
+				if (remaining.length) {
+					this._events[name] = remaining;
+				}
+				else {
+					delete this._events[name];
+				}
+			}
+
+			return this;
+		},
+
+		trigger: function(event) {
+			if (!this._events) return this;
+
+			var args = arguments || [];
+			var isArray = Object.prototype.toString.call(args) === '[object Array]';
+
+			if (!isArray) {
+				var values = [];
+				var k = keys(args);
+				for (var i = 0, len = k.length; i < len; i++) {
+					values.push(args[k[i]]);
+				}
+				args = values;
+			}
+			args = args.slice(1);
+
+			var events = this._events[event];
+			var allEvents = this._events.all;
+			if (events) triggerEvents(events, args);
+			if (allEvents) triggerEvents(allEvents, arguments);
+
+			return this;
+		}
 	};
 
 	/**
@@ -284,70 +411,6 @@
 	InvalidArgumentException.prototype.name = "InvalidArgumentException";
 	InvalidArgumentException.prototype.constructor = InvalidArgumentException;
 
-
-	/**
-	 * Private utility functions
-	 */
-	var extend = function(target, object) {
-		for (var i in object) {
-			if (object.hasOwnProperty(i)) {
-				if (typeof target[i] == "object" && target.hasOwnProperty(i) && target[i] != null) {
-					extend(target[i], object[i]);
-				} else {
-					target[i] = object[i];
-				}
-			}
-		}
-		return target;
-	};
-	var keys = function(o) {
-		if (typeof o != 'object') return [];
-		var keys = [];
-    	for (var key in o) if (hasOwnProperty.call(o, key)) keys.push(key);
-    	return keys;
-	};
-	var isDate = function(date) {
-		return date.constructor.toString().indexOf("Date") > -1;
-	};
-	var formatDate = function(date, format) {
-		var hours = date.getHours();
-		var ttime = "AM";
-
-		if (format.indexOf("t") > -1 && hours > 12) {
-			hours = hours - 12;
-			ttime = "PM";
-		}
-
-		var o = {
-			"M+": date.getMonth() + 1, //month
-			"d+": date.getDate(),    //day
-			"h+": hours,   //hour
-			"m+": date.getMinutes(), //minute
-			"s+": date.getSeconds(), //second
-			"q+": Math.floor((date.getMonth() + 3) / 3),  //quarter
-			"S": date.getMilliseconds(), //millisecond,
-			"t+": ttime
-		};
-
-		if (/(y+)/.test(format)) {
-			format = format.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
-		}
-
-		for (var k in o) {
-			if (new RegExp("(" + k + ")").test(format)) {
-				format = format.replace(RegExp.$1, RegExp.$1.length == 1 ? o[k] : ("00" + o[k]).substr(("" + o[k]).length));
-			}
-		}
-		return format;
-	};
-	var parseTemplate = function(tpl, data) {
-		var val = tpl;
-		for (var key in data) {
-			val = val.replace('{{' + key + '}}', data[key]);
-		}
-		return val;
-	};
-
 	AerisMaps.url = 'http://maps.aerisapi.com/{{client_id}}_{{client_secret}}/{{layers}}/{{size}}/{{loc}},{{zoom}}/{{time}}.{{format}}';
 
 	/**
@@ -443,7 +506,7 @@
 
 		return this;
 	};
-	Events(Animation.prototype, true);
+	extend(Animation.prototype, Events);
 
 	Animation.prototype.init = function() {
 		if (this.target) {
