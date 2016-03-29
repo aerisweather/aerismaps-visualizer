@@ -865,4 +865,7 @@
 
 	window.AerisMaps.Animation = Animation;
 
+	// inject animator CSS into the DOM
+	Dom.select('head').ext.append('<link href="//cdn.aerisapi.com/css/aerismaps-animation.css" rel="stylesheet" type="text/css"/>');
+
 })(window, document);
