@@ -411,7 +411,7 @@
 	InvalidArgumentException.prototype.name = "InvalidArgumentException";
 	InvalidArgumentException.prototype.constructor = InvalidArgumentException;
 
-	AerisMaps.url = 'http://maps.aerisapi.com/{{client_id}}_{{client_secret}}/{{layers}}/{{size}}/{{loc}},{{zoom}}/{{time}}.{{format}}';
+	AerisMaps.url = '//{{server}}/{{client_id}}_{{client_secret}}/{{layers}}/{{size}}/{{loc}},{{zoom}}/{{time}}.{{format}}';
 
 	/**
 	 * Core Map Animation object
@@ -419,6 +419,7 @@
 	var Animation = function(target, options) {
 		var self = this;
 		var config = extend({
+			server: 'maps.aerisapi.com',
 			loc: null,
 			keys: {
 				id: null,
@@ -823,6 +824,7 @@
 		var gmtDate = new Date(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
 
 		var url = parseTemplate(AerisMaps.url, {
+			server: opts.server,
 			client_id: opts.keys.id,
 			client_secret: opts.keys.secret,
 			layers: opts.map.layers.join(','),
