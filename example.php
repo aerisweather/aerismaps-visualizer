@@ -50,8 +50,8 @@ var now = new Date();
 var animator = new AerisMaps.Animation('#map', {
 	loc: '<?php echo $loc; ?>',
 	keys: {
-		id: '',
-		secret: ''
+		id: 'wgE96YE3scTQLKjnqiMsv',
+		secret: 'sFA4Gfz8s8brxUUHoZTQ3iZIRy6YSwLhf1wJQzDi'
 	},
 	autoplay: true,
 	map: {

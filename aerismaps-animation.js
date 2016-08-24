@@ -427,6 +427,7 @@
 			},
 			refresh: 0,
 			autoplay: false,
+			autosize: true,
 			events: {
 				click: function() {
 					if (self.isPaused() || !self.isAnimating()) {
@@ -465,11 +466,14 @@
 			}
 		}, options);
 
+		var now = new Date().getTime();
+
 		if (isDate(config.animation.from)) {
 			this._fromOffset = null;
 			config.animation.from = config.animation.from.getTime();
 		} else {
 			this._fromOffset = config.animation.from * 1000;
+			config.animation.from = now + this._fromOffset;
 		}
 
 		if (isDate(config.animation.to)) {
@@ -477,6 +481,7 @@
 			config.animation.to = config.animation.to.getTime();
 		} else {
 			this._toOffset = config.animation.to * 1000;
+			config.animation.to = now + this._toOffset;
 		}
 
 		this.target = (typeof target == 'string') ? Dom.select(target) : Dom.extend(target);
@@ -494,8 +499,10 @@
 		this._delay = 1/60;
 		this._paused = false;
 
+		this._times = [];
 		this._images = {};
 		this._currentImage = null;
+		this._currentIntervalTime = 0;
 
 		if (!config.keys.id || config.keys.id.length == 0 || !config.keys.secret || config.keys.secret.length == 0) {
 			throw new InvalidArgumentException('Invalid configuration values for "keys.id" and/or "keys.secret"');
@@ -514,10 +521,15 @@
 			var self = this;
 
 			this.target.ext.css({
-				position: 'relative',
-				width: this.config.map.size.width + 'px',
-				height: this.config.map.size.height  + 'px'
+				position: 'relative'
 			});
+
+			if (this.config.autosize === true) {
+				this.target.ext.css({
+					width: this.config.map.size.width + 'px',
+					height: this.config.map.size.height  + 'px'
+				});
+			}
 			this.target.ext.addClass('amp-map');
 
 			this.target.ext.append('<div class="amp-map-content"></div>');
@@ -564,21 +576,20 @@
 				this.target.ext.append('<div class="amp-map-title">' + this.config.overlays.title + '</div>');
 			}
 
+			this._times = this._timesForIntervals();
+
 			if (this.config.autoplay) {
 				this.play();
 			} else {
 				// determine the time interval to display initially before animation begins
 				var now = new Date().getTime();
-				var start = (undefined !== this._fromOffset) ? now + this._fromOffset : this._from;
-				var end = (undefined !== this._toOffset) ? now + this._toOffset : this._to;
 				var time = now;
 
-				if (start >= now) {
-					time = start;
-				} else if (end <= now) {
-					time = end;
+				if (this._from >= now) {
+					time = this._from;
+				} else if (this._to <= now) {
+					time = this._to;
 				}
-
 				this.goToTime(time);
 			}
 		}
@@ -588,7 +599,8 @@
 		if (this.isAnimating()) {
 			return;
 		}
-		if (!this._hasImages()) {
+
+		if (!this._hasImages() || this._totalImages() < this._intervals) {
 			this._loadData();
 			return;
 		}
@@ -614,7 +626,7 @@
 	};
 
 	Animation.prototype.stop = function() {
-		this.pause();
+		this.pause(false);
 		this.trigger('stop');
 		this._paused = false;
 
@@ -633,21 +645,31 @@
 		})(this);
 	};
 
-	Animation.prototype.pause = function() {
+	Animation.prototype.pause = function(fireEvents) {
+		if (fireEvents !== false) {
+			fireEvents = true;
+		}
+
 		this._paused = true;
 		if (this._timer) {
 			window.clearInterval(this._timer);
-			this._timer = null;
 		}
-		this.trigger('pause');
+		this._timer = null;
+
+		if (fireEvents) {
+			this.trigger('pause');
+		}
 	};
 
 	Animation.prototype.goToTime = function(time) {
 		this._time = isDate(time) ? time.getTime() : time;
 		this._offset = time - this._from;
 
-		var image = this._imageClosestToTime(this._time);
+		var closest = this._intervalClosestToTime(time);
+
+		var image = this._imageClosestToTime(closest);
 		if (image) {
+			this._currentIntervalTime = closest;
 			if (image != this._currentImage) {
 				image.ext.show();
 				if (this._currentImage && this._currentImage.ext) {
@@ -656,7 +678,10 @@
 				this._currentImage = image;
 			}
 		} else if (!this.isAnimating()) {
-			this._loadInterval(time, false);
+			if (closest != this._currentIntervalTime) {
+				this._loadInterval(closest, true);
+				this._currentIntervalTime = closest;
+			}
 		}
 		this.trigger('advance', { time: this._time, offset: this._offset });
 	};
@@ -690,6 +715,16 @@
 		this._from = isDate(start) ? start.getTime() : start;
 		this._updateTiming();
 		this._images = {};
+		this._times = this._timesForIntervals();
+
+		this.trigger('start:change', this._from);
+	};
+
+	Animation.prototype.setStartOffset = function(offset) {
+		this._fromOffset = offset;
+
+		var now = new Date().getTime();
+		this.setStartDate(now + offset);
 	};
 
 	Animation.prototype.endDate = function() {
@@ -701,6 +736,21 @@
 		this._to = isDate(end) ? end.getTime() : end;
 		this._updateTiming();
 		this._images = {};
+		this._times = this._timesForIntervals();
+
+		this.trigger('end:change', this._to);
+
+		var now = new Date().getTime();
+		if (this._to > now) {
+			this.goToTime(now);
+		}
+	};
+
+	Animation.prototype.setEndOffset = function(offset) {
+		this._toOffset = offset;
+
+		var now = new Date().getTime();
+		this.setEndDate(now + offset);
 	};
 
 	//
@@ -709,6 +759,26 @@
 
 	Animation.prototype._updateTiming = function() {
 		this._increment = ((this._to - this._from) / this.duration) * this._delay;
+	};
+
+	Animation.prototype._intervalClosestToTime = function(time) {
+		var closest = this._from;
+		var diff = Math.abs(time - closest);
+
+		if (undefined == this._times) {
+			this._times = this._timesForIntervals();
+		}
+
+		for (var i in this._times) {
+			var t = this._times[i];
+			var tdiff = Math.abs(time - t);
+			if (tdiff < diff) {
+				diff = tdiff;
+				closest = t;
+			}
+		}
+
+		return Math.round(closest);
 	};
 
 	Animation.prototype._imageClosestToTime = function(time) {
@@ -747,6 +817,14 @@
 		return hasProps;
 	};
 
+	Animation.prototype._totalImages = function() {
+		var total = 0;
+		for (var i in this._images) {
+			total += 1;
+		}
+		return total;
+	}
+
 	Animation.prototype._updateTimestampOverlay = function(time) {
 		if (this._timestamp) {
 			var ts = this.config.overlays.timestamp;
@@ -762,7 +840,7 @@
 		}
 	};
 
-	Animation.prototype._loadData = function() {
+	Animation.prototype._timesForIntervals = function() {
 		// if from and to were offsets and not dates, then we need to update the date time values before loading new data
 		var now = new Date().getTime();
 		if (null !== this._fromOffset) {
@@ -773,23 +851,30 @@
 			this._to = now + this._toOffset;
 		}
 
-		this._images = {};
-		this._contentTarget.ext.empty();
-
 		// calculate time intervals needed
 		var totalIntervals = this._intervals;
 		var interval = Math.round((this._to - this._from) / totalIntervals);
 		var times = [];
 		var lastTime = null;
-		for (var i = 0; i < totalIntervals; i++) {
+		for (var i = 0; i < totalIntervals - 1; i++) {
 			var t = this._from + (interval * i);
 			if (i == 0 || t != lastTime) {
-				times.push(t);
+				times.push(Math.round(t));
 				lastTime = t;
 			}
 		}
+		times.push(this._to);
 
 		this._intervals = times.length;
+
+		return times;
+	};
+
+	Animation.prototype._loadData = function() {
+		var times = this._timesForIntervals();
+
+		this._images = {};
+		this._contentTarget.ext.empty();
 		this.trigger('load:start', { times: times });
 
 		var self = this;
@@ -819,6 +904,24 @@
 	};
 
 	Animation.prototype._loadInterval = function(interval, cache, callback) {
+		interval = Math.round(interval);
+
+		// don't reload interval if it already exists in the DOM
+		var el = Dom.select('#amp-' + interval);
+		if (el && el.length > 0) {
+			if (undefined != el[0]) el = el[0];
+			el.ext.show();
+			if (self._currentImage && self._currentImage.ext) {
+				self._currentImage.ext.hide();
+			}
+			self._currentImage = el;
+
+			if (callback) {
+				callback();
+			}
+			return;
+		}
+
 		var opts = this.config;
 		var date = new Date(interval);
 		var gmtDate = new Date(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
@@ -835,6 +938,10 @@
 			time: formatDate(gmtDate, 'yyyyMMddhhmm00')
 		});
 
+		if (!this._images) {
+			this._images = {};
+		}
+
 		var image = new Image();
 		image.src = url;
 		(function(self) {
@@ -848,6 +955,9 @@
 
 				var el = Dom.select('#amp-' + interval);
 				if (el && cache) {
+					if (undefined != el[0]) {
+						el = el[0];
+					}
 					self._images[interval] = el;
 				}
 				if (self._currentImage && self._currentImage.ext) {
@@ -864,6 +974,11 @@
 			};
 		})(this);
 	};
+
+	Animation.prototype._reset = function() {
+		this._images = {};
+		this._contentTarget.ext.empty();
+	}
 
 	window.AerisMaps.Animation = Animation;
 
