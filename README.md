@@ -22,8 +22,8 @@ Use the included `example.php` page to test out various options quickly by chang
 
 Parameter | Description
 --------- | -----------
-loc | The location to center the map on
-z | Map zoom level
+loc | The location to center the map on ("seattle,wa", "78705", "44.96,-93.27") or a bounding box to define a region ("30.1010,-85.9578,33.0948,-82.4421").
+z | Map zoom level (will be ignored if using a bounding box for "loc")
 i | Total number of intervals/frames to display during the animation
 layers | A comma-separated list of map layers to display on the map
 d | Total duration of the animation in seconds
