@@ -411,7 +411,7 @@
 	InvalidArgumentException.prototype.name = "InvalidArgumentException";
 	InvalidArgumentException.prototype.constructor = InvalidArgumentException;
 
-	AerisMaps.url = '//{{server}}/{{client_id}}_{{client_secret}}/{{layers}}/{{size}}/{{loc}},{{zoom}}/{{time}}.{{format}}';
+	AerisMaps.url = '//{{server}}/{{client_id}}_{{client_secret}}/{{layers}}/{{size}}/{{region}}/{{time}}.{{format}}';
 
 	/**
 	 * Core Map Animation object
@@ -926,6 +926,7 @@
 		var date = new Date(interval);
 		var gmtDate = new Date(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
 
+		var isBounds = opts.loc.match(/^([0-9\.-]+,){3}[0-9\.-]+$/) != null;
 		var url = parseTemplate(AerisMaps.url, {
 			server: opts.server,
 			client_id: opts.keys.id,
@@ -934,6 +935,8 @@
 			zoom: opts.map.zoom,
 			size: opts.map.size.width + 'x' + opts.map.size.height,
 			loc: opts.loc,
+			bounds: opts.bounds,
+			region: (isBounds) ? opts.loc : opts.loc + ',' + opts.map.zoom,
 			format: opts.map.format,
 			time: formatDate(gmtDate, 'yyyyMMddhhmm00')
 		});
