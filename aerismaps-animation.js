@@ -440,7 +440,11 @@
 		return re.test(this.el.className);
 	};
 	Dom.prototype.html = function(html) {
-		this.el.innerHTML = html;
+		if (undefined != html) {
+			this.el.innerHTML = html;
+		} else {
+			return this.el.innerHTML;
+		}
 	};
 	Dom.prototype.create = function(html) {
 		var el = html;
@@ -563,6 +567,10 @@
 				timestamp: {
 					format: 'MM/dd/yyyy hh:mm tt',
 					continuous: true
+				},
+				branding: {
+					html: null,
+					img: null
 				}
 			}
 		}, options);
@@ -659,6 +667,7 @@
 				}
 			}
 
+			// map tilestamp
 			if (this.config.overlays.timestamp) {
 				this.target.ext.append('<div class="amp-map-timestamp"></div>');
 				this._timestamp = this.target.ext.select('.amp-map-timestamp');
@@ -682,11 +691,30 @@
 					self._updateTimestampOverlay(data.time);
 				});
 			}
+
+			// map title
 			if (this.config.overlays.title) {
 				this.target.ext.append('<div class="amp-map-title">' + this.config.overlays.title + '</div>');
 				this.target.ext.select('.amp-map-title').ext.css({
 					"z-index": 11
 				});
+			}
+
+			// map branding
+			if (this.config.overlays.branding) {
+				this.target.ext.append('<div class="amp-map-branding"></div>');
+
+				var branding = this.config.overlays.branding;
+				var el = this.target.ext.select('.amp-map-branding');
+				el.ext.css({
+					"z-index": 12
+				});
+
+				if (undefined != branding.img) {
+					el.ext.html('<img src="' + branding.img + '" />');
+				} else if (undefined != branding.html) {
+					el.ext.html(branding.html);
+				}
 			}
 
 			this._fetchLayerMetadata(function() {

@@ -26,3 +26,12 @@
 	padding: 0 10px;
 	border-bottom: 3px solid #0097e2;
 }
+
+.amp-map-branding {
+	position: absolute;
+	bottom: 7px;
+	right: 10px;
+	font-size: 22px;
+	font-weight: bold;
+	color: #666;
+}
