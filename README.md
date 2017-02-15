@@ -61,6 +61,9 @@ Option | Default | Description
 **overlays.timestamp** | | Map timestamp options
 **overlays.timestamp.format** | MM/dd/yyyy hh:mm tt | [string] Time and date format for the map timeline during playback (limited formatting options currently supported)
 **overlays.timestamp.continuous** | true | [boolean] Whether or not the timestamp should update continuously during playback regardless of frame intervals; if `false`, then the timestamp will only update when the animation's frame changes
+**overlays.branding** | | Branding options
+**overlays.branding.img** | null | [string] An image URL to display on the map, such as a company logo.
+**overlays.branding.html** | null | [string] A HTML string to display for the map branding, such as a company name or logo. Offers more customization options than *overlays.branding.img*.
 
 The following is an example configuration object with default values:
 
@@ -106,6 +109,10 @@ The following is an example configuration object with default values:
 			timestamp: {
 				format: 'MM/dd/yyyy hh:mm tt',
 				continuous: true
+			},
+			branding: {
+				img: null,
+				html: null
 			}
 		}
 	}
