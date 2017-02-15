@@ -548,7 +548,8 @@
 					'flat',
 					'radar',
 					'admin'
-				]
+				],
+				combined: false
 			},
 			animation: {
 				from: -6 * 3600,
@@ -695,8 +696,10 @@
 	};
 
 	Animation.prototype.startup = function() {
-		this._loadBase(this.config.map.layers);
-		this._loadOverlays(this.config.map.layers);
+		if (!this.config.map.combined) {
+			this._loadBase(this.config.map.layers);
+			this._loadOverlays(this.config.map.layers);
+		}
 
 		this._times = this._timesForIntervals();
 
@@ -1061,14 +1064,17 @@
 		var overlayLayers = this.layerGroups.overlay || [];
 		var exclude = baseLayers.concat(overlayLayers);
 
-		var layers = filter(opts.map.layers, function(el) {
-			for (var i = 0, len = exclude.length; i < len; i += 1) {
-				if (el.match(new RegExp('^' + exclude[i])) != null) {
-					return false;
+		var layers = opts.map.layers;
+		if (!opts.map.combined) {
+			layers = filter(opts.map.layers, function(el) {
+				for (var i = 0, len = exclude.length; i < len; i += 1) {
+					if (el.match(new RegExp('^' + exclude[i])) != null) {
+						return false;
+					}
 				}
-			}
-			return true;
-		});
+				return true;
+			});
+		}
 
 		var url = this._urlForLayers(layers, timestamp);
 
