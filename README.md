@@ -34,7 +34,7 @@ For example, the following URL would display a radar animation for Seattle, WA f
 
 `example.php?loc=seattle,wa&z=7&layers=flat,radar,counties,admin&i=10&from=-6`
 	
-## Configuring
+## Configuring a Map
 
 Your Animation instance is automatically configured with defaults for many different options to control how your animation appears. Below is the full list of options you can override in the configuration object you pass when instantiating your `AerisMaps.Animation(config)` instance along with their default values.
 
@@ -51,6 +51,7 @@ Option | Default | Description
 **map.size.width** | 600 | [integer] Map width in pixels (limited by your Aeris Maps level)
 **map.size.height** | 600 | [integer] Map height in pixels (limited by your Aeris Maps level)
 **map.layers** | ['flat','radar','admin'] | [array] An array of [map layers](http://www.aerisweather.com/support/docs/aeris-maps/reference/map-layers/) and [options](http://www.aerisweather.com/support/docs/aeris-maps/layer-modifiers/) to display on the map
+**map.combined** | false | [boolean] Whether or not all specified layers specified by `map.layer` should be combined into a single image for each request. When `false`, the default, base layers and overlay layers will be rendered in their own containers below and above the map content respectively and will not be animated, which reduces the total map units used for a single animation. Set to `true` if you need your layers rendered in a unique order around the animated map layers.
 **animation.from** | -6 * 3600 | [integer] or [date] Start time offset relative to now for the animation in seconds, or a valid `Date` instance; negative values are in the past
 **animation.to** | 0 | [integer] or [date] End time offset relative to now for the animation in seconds, or a valid `Date` instance; negative values are in the past
 **animation.duration** | 2 | [integer] Total duration of the animation in seconds; `duration` and `intervals` are both used to control the overall speed of the animation
@@ -90,7 +91,8 @@ The following is an example configuration object with default values:
 				'flat',
 				'radar',
 				'admin'
-			]
+			],
+			combined: false
 		},
 		animation: {
 			from: -6 * 3600,
