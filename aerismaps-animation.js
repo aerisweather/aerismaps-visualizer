@@ -23,8 +23,8 @@
 	var keys = function(o) {
 		if (typeof o != 'object') return [];
 		var keys = [];
-    	for (var key in o) if (hasOwnProperty.call(o, key)) keys.push(key);
-    	return keys;
+		for (var key in o) if (hasOwnProperty.call(o, key)) keys.push(key);
+		return keys;
 	};
 	var isDate = function(date) {
 		return date.constructor.toString().indexOf("Date") > -1;
@@ -81,6 +81,14 @@
 		}
 
 		return obj;
+	};
+	var filter = function(obj, predicate) {
+		obj = obj || [];
+		var results = [];
+		obj.forEach(function(el) {
+			if (predicate(el)) results.push(el);
+		});
+		return results;
 	};
 
 
@@ -208,11 +216,100 @@
 		}
 	};
 
+	var jsonpId = 0;
+	var ajax = function(options) {
+		options.method = options.method || 'GET';
+
+		var jsonpCallbackName = null;
+
+		var request = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
+		request.onreadystatechange = function() {
+			var req = request;
+			if (4 == req.readyState && 200 == req.status) {
+				var type = req.getResponseHeader('Content-Type');
+				var content;
+				if (type.match(/xml/gi)) {
+					content = req.responseXML;
+				} else if (type.match(/json/gi)) {
+					content = JSON.parse(req.responseText);
+				} else {
+					content = req.responseText;
+				}
+
+				if (jsonpCallbackName) {
+					window[jsonpCallbackName](req.responseText);
+				} else if (options.success) {
+					options.success(content);
+				}
+			} else if (4 == req.readyState && 200 != req.status && options.error) {
+				options.error(req.responseText, req.status);
+			}
+		};
+
+		if (options.dataType) {
+			if (options.dataType == 'jsonp') {
+				jsonpCallbackName = '__aw__' + (++jsonpId);
+			}
+		}
+
+		// build request
+		var query = '';
+		if (options.params) {
+			if (options.params.substr) {
+				query = options.params;
+			} else {
+				for (var key in options.params) {
+					query += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(options.params[key]);
+				}
+				query = query.substr(1);
+			}
+		}
+
+		// prevent caching
+		// options.url += ((options.url.indexOf('?') !== -1) ? "&" : "?") + '_' + (new Date()).getTime();
+		if (jsonpCallbackName) {
+			var url = options.url + query;
+			url = url + ((url.indexOf("?") !== -1) ? "&" : "?") + "callback=" + jsonpCallbackName;
+
+			var script = document.createElement('script');
+			script.src = url;
+			document.getElementsByTagName('body')[0].appendChild(script);
+			window[jsonpCallbackName] = function(data) {
+				delete window[jsonpCallbackName];
+				script.parentElement.removeChild(script);
+				if (options.success) {
+					options.success(data);
+				}
+			};
+		} else if ('POST' == options.method) {
+			request.open('POST', options.url, true);
+			// set request headers if any were passed with options
+			for (var header in options.headers) {
+				request.setRequestHeader(header, options.headers[header]);
+			}
+			request.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+			request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+			request.send(options.params);
+		} else {
+			if (query) {
+				query = ((options.url.match(/\?/)) ? '&' : '?') + query;
+			}
+			request.open('GET', options.url + query, true);
+			// set request headers if any were passed with options
+			for (var header in options.headers) {
+				request.setRequestHeader(header, options.headers[header]);
+			}
+			request.send(null);
+		}
+
+		return request;
+	};
+
 	/**
 	 * DOM utilities
 	 */
 	var stringToDOM = function(string) {
- 		var div = document.createElement('div');
+		var div = document.createElement('div');
 		var el = document.createDocumentFragment();
 		var node = null;
 
@@ -221,9 +318,9 @@
 			el.appendChild(node);
 		}
 		return el;
- 	};
+	};
 
- 	var getStyle = function(el, prop) {
+	var getStyle = function(el, prop) {
 		var value, defaultView = el.ownerDocument.defaultView;
 		// W3C standard method
 		if (defaultView && defaultView.getComputedStyle) {
@@ -342,6 +439,9 @@
 		var re = new RegExp('(^|\\s+)' + cls + '(\\s+|$)');
 		return re.test(this.el.className);
 	};
+	Dom.prototype.html = function(html) {
+		this.el.innerHTML = html;
+	};
 	Dom.prototype.create = function(html) {
 		var el = html;
 		if (typeof el == 'string') {
@@ -375,7 +475,7 @@
 	};
 
 	Dom.select = function(selector, el) {
- 		if (typeof selector != 'string') return selector;
+		if (typeof selector != 'string') return selector;
 		if (!el) el = document;
 		if (el != document && el != window) {
 			var scope = selector.match(/^\:scope/);
@@ -439,7 +539,7 @@
 			},
 			map: {
 				zoom: 6,
-				format: 'jpg',
+				format: 'png',
 				size: {
 					width: 600,
 					height: 600
@@ -504,6 +604,9 @@
 		this._currentImage = null;
 		this._currentIntervalTime = 0;
 
+		this._isLoadingMetadata = false;
+		this._metadataCallbacks = [];
+
 		if (!config.keys.id || config.keys.id.length == 0 || !config.keys.secret || config.keys.secret.length == 0) {
 			throw new InvalidArgumentException('Invalid configuration values for "keys.id" and/or "keys.secret"');
 		} else if (!config.loc || config.loc.length == 0) {
@@ -532,17 +635,20 @@
 			}
 			this.target.ext.addClass('amp-map');
 
-			this.target.ext.append('<div class="amp-map-content"></div>');
-			var contentTarget = this.target.ext.select('.amp-map-content');
-			contentTarget.ext.css({
-				position: 'absolute',
-				top: 0,
-				left: 0,
-				bottom: 0,
-				right: 0,
-				"z-index": 0
+			var containers = ['base', 'content', 'overlay'];
+			containers.forEach(function(key, i) {
+				self.target.ext.append('<div class="amp-map-' + key + '"></div>');
+				var target = self.target.ext.select('.amp-map-' + key);
+				target.ext.css({
+					position: 'absolute',
+					top: 0,
+					left: 0,
+					bottom: 0,
+					right: 0,
+					"z-index": i
+				});
+				self['_' + key + 'Target'] = target;
 			});
-			this._contentTarget = contentTarget;
 
 			if (this.config.events) {
 				for (var event in this.config.events) {
@@ -555,6 +661,9 @@
 			if (this.config.overlays.timestamp) {
 				this.target.ext.append('<div class="amp-map-timestamp"></div>');
 				this._timestamp = this.target.ext.select('.amp-map-timestamp');
+				this._timestamp.ext.css({
+					"z-index": 10
+				});
 
 				var ts = this.config.overlays.timestamp;
 				if (typeof ts == 'object' && undefined !== ts.continuous) {
@@ -574,24 +683,36 @@
 			}
 			if (this.config.overlays.title) {
 				this.target.ext.append('<div class="amp-map-title">' + this.config.overlays.title + '</div>');
+				this.target.ext.select('.amp-map-title').ext.css({
+					"z-index": 11
+				});
 			}
 
-			this._times = this._timesForIntervals();
+			this._fetchLayerMetadata(function() {
+				self.startup();
+			});
+		}
+	};
 
-			if (this.config.autoplay) {
-				this.play();
-			} else {
-				// determine the time interval to display initially before animation begins
-				var now = new Date().getTime();
-				var time = now;
+	Animation.prototype.startup = function() {
+		this._loadBase(this.config.map.layers);
+		this._loadOverlays(this.config.map.layers);
 
-				if (this._from >= now) {
-					time = this._from;
-				} else if (this._to <= now) {
-					time = this._to;
-				}
-				this.goToTime(time);
+		this._times = this._timesForIntervals();
+
+		if (this.config.autoplay) {
+			this.play();
+		} else {
+			// determine the time interval to display initially before animation begins
+			var now = new Date().getTime();
+			var time = now;
+
+			if (this._from >= now) {
+				time = this._from;
+			} else if (this._to <= now) {
+				time = this._to;
 			}
+			this.goToTime(time);
 		}
 	};
 
@@ -601,7 +722,14 @@
 		}
 
 		if (!this._hasImages() || this._totalImages() < this._intervals) {
-			this._loadData();
+			if (this._isLoadingMetadata) {
+				var self = this;
+				this._metadataCallbacks.push(function() {
+					self._loadData();
+				});
+			} else {
+				this._loadData();
+			}
 			return;
 		}
 
@@ -925,24 +1053,35 @@
 		var opts = this.config;
 		var date = new Date(interval);
 		var gmtDate = new Date(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
+		var timestamp = formatDate(gmtDate, 'yyyyMMddhhmm00');
+		// var isBounds = opts.loc.match(/^([0-9\.-]+,){3}[0-9\.-]+$/) != null;
 
-		var isBounds = opts.loc.match(/^([0-9\.-]+,){3}[0-9\.-]+$/) != null;
-		var url = parseTemplate(AerisMaps.url, {
-			server: opts.server,
-			client_id: opts.keys.id,
-			client_secret: opts.keys.secret,
-			layers: opts.map.layers.join(','),
-			zoom: opts.map.zoom,
-			size: opts.map.size.width + 'x' + opts.map.size.height,
-			loc: opts.loc,
-			bounds: opts.bounds,
-			region: (isBounds) ? opts.loc : opts.loc + ',' + opts.map.zoom,
-			format: opts.map.format,
-			time: formatDate(gmtDate, 'yyyyMMddhhmm00')
+		// filter out base and overlay layers
+		var baseLayers = this.layerGroups.base || [];
+		var overlayLayers = this.layerGroups.overlay || [];
+		var exclude = baseLayers.concat(overlayLayers);
+
+		var layers = filter(opts.map.layers, function(el) {
+			for (var i = 0, len = exclude.length; i < len; i += 1) {
+				if (el.match(new RegExp('^' + exclude[i])) != null) {
+					return false;
+				}
+			}
+			return true;
 		});
+
+		var url = this._urlForLayers(layers, timestamp);
 
 		if (!this._images) {
 			this._images = {};
+		}
+
+		// skip the request if we already have a cached image for this interval
+		if (this._images[interval]) {
+			if (callback) {
+				callback();
+			}
+			return;
 		}
 
 		var image = new Image();
@@ -977,6 +1116,97 @@
 			};
 		})(this);
 	};
+
+	Animation.prototype._loadBase = function(layers) {
+		var group = this.layerGroups.base;
+		var layers = filter(layers, function(el) {
+			for (var i = 0, len = group.length; i < len; i += 1) {
+				if (el.match(new RegExp('^' + group[i])) != null) {
+					return true;
+				}
+			}
+			return false;
+		});
+
+		if (layers.length > 0) {
+			var url = this._urlForLayers(layers);
+			this._baseTarget.ext.html('<img src="' + url + '" width="' + this.config.map.size.width + '" height="' + this.config.map.size.height + '" style="position:absolute;">');
+		}
+	};
+
+	Animation.prototype._loadOverlays = function(layers) {
+		var group = this.layerGroups.overlay;
+		var layers = filter(layers, function(el) {
+			for (var i = 0, len = group.length; i < len; i += 1) {
+				if (el.match(new RegExp('^' + group[i])) != null) {
+					return true;
+				}
+			}
+			return false;
+		});
+
+		if (layers.length > 0) {
+			var url = this._urlForLayers(layers);
+			this._overlayTarget.ext.html('<img src="' + url + '" width="' + this.config.map.size.width + '" height="' + this.config.map.size.height + '" style="position:absolute;">');
+		}
+	};
+
+	Animation.prototype._fetchLayerMetadata = function(callback) {
+		this._isLoadingMetadata = true;
+
+		var self = this;
+		ajax({
+			url: 'http://cdn.aerisjs.com/layers.json',
+			dataType: 'json',
+			success: function(data) {
+				var groups = [];
+				data.forEach(function(el) {
+					var cat = el.category;
+					if (undefined == groups[cat]) {
+						groups[cat] = [];
+					}
+					groups[cat].push(el.id);
+				});
+
+				self.layerGroups = groups;
+				self._isLoadingMetadata = false;
+
+				if (self._metadataCallbacks && self._metadataCallbacks.length > 0) {
+					self._metadataCallbacks.forEach(function(callback) {
+						callback();
+					});
+					self._metadataCallbacks = null;
+				}
+				if (callback) {
+					callback();
+				}
+			},
+			error: function(error) {
+				console.log('failed!');
+			}
+		});
+	};
+
+	Animation.prototype._urlForLayers = function(layers, time) {
+		var opts = this.config;
+		var isBounds = opts.loc.match(/^([0-9\.-]+,){3}[0-9\.-]+$/) != null;
+
+		var url = parseTemplate(AerisMaps.url, {
+			server: opts.server,
+			client_id: opts.keys.id,
+			client_secret: opts.keys.secret,
+			layers: layers.join(','),
+			zoom: opts.map.zoom,
+			size: opts.map.size.width + 'x' + opts.map.size.height,
+			loc: opts.loc,
+			bounds: opts.bounds,
+			region: (isBounds) ? opts.loc : opts.loc + ',' + opts.map.zoom,
+			format: opts.map.format,
+			time: time || 0
+		});
+
+		return url;
+	}
 
 	Animation.prototype._reset = function() {
 		this._images = {};
