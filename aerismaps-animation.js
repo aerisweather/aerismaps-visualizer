@@ -33,8 +33,8 @@
 		var hours = date.getHours();
 		var ttime = "AM";
 
-		if (format.indexOf("t") > -1 && hours > 12) {
-			hours = hours - 12;
+		if (format.indexOf("t") > -1 && hours >= 12) {
+			if (hours > 12) hours = hours - 12;
 			ttime = "PM";
 		}
 
