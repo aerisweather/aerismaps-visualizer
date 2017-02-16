@@ -1190,7 +1190,7 @@
 
 		var self = this;
 		ajax({
-			url: 'http://cdn.aerisjs.com/layers.json',
+			url: '//cdn.aerisjs.com/layers.json',
 			dataType: 'json',
 			success: function(data) {
 				var groups = [];
