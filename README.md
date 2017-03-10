@@ -1,14 +1,14 @@
-# AerisMaps.Animation
+# AerisMaps.Visualizer
 
-A minimal Javascript class for creating and displaying animations with [Aeris Maps (AMP)](http://www.aerisweather.com/develop/maps/) imagery, our powerful and flexible weather mapping platform giving you exactly the weather maps you need.
+A minimal Javascript class for creating, displaying and animating [Aeris Maps (AMP)](http://www.aerisweather.com/develop/maps/) imagery, our powerful and flexible weather mapping platform giving you exactly the weather maps you need.
 
 ## Getting Started
 
-You'll need an active [Aeris Maps (AMP) subscription](http://www.aerisweather.com/support/docs/aeris-maps/getting-started/) before using this animator class, which you can [sign up for free](http://www.aerisweather.com/signup/) with our Developer level account.
+You'll need an active [Aeris Maps (AMP) subscription](http://www.aerisweather.com/support/docs/aeris-maps/getting-started/) before using this visualizer class, which you can [sign up for free](http://www.aerisweather.com/signup/) with our Developer level account.
 
-Once you're signed up and have your [first project/application registered](http://www.aerisweather.com/support/docs/aeris-maps/getting-started/access-authentication/) with the Aeris Maps API, you'll need that project's access ID and secret keys to configure your `AerisMaps.Animation` instance with. Simply pass these keys in your instance's configuration object at instantiation along with your desired location to use for the map center:
+Once you're signed up and have your [first project/application registered](http://www.aerisweather.com/support/docs/aeris-maps/getting-started/access-authentication/) with the Aeris Maps API, you'll need that project's access ID and secret keys to configure your `AerisMaps.Visualizer` instance with. Simply pass these keys in your instance's configuration object at instantiation along with your desired location to use for the map center:
 
-	var animator = new AerisMaps.Animation('#map', {
+	var map = new AerisMaps.Visualizer('#map', {
 		loc: 'seattle,wa',
 		keys: {
 			id: '{{your_id}}',
@@ -36,7 +36,7 @@ For example, the following URL would display a radar animation for Seattle, WA f
 	
 ## Configuring a Map
 
-Your Animation instance is automatically configured with defaults for many different options to control how your animation appears. Below is the full list of options you can override in the configuration object you pass when instantiating your `AerisMaps.Animation(config)` instance along with their default values.
+Your `Visualizer` instance is automatically configured with defaults for many different options to control how your map and animation appear. Below is the full list of options you can override in the configuration object you pass when instantiating your `AerisMaps.Visualizer(config)` instance along with their default values.
 
 Option | Default | Description
 ------ | ------- | -----------
@@ -119,17 +119,17 @@ The following is an example configuration object with default values:
 	
 ## Public Properties
 
-The following public properties are available on your `Animation` instance:
+The following public properties are available on your `Visualizer` instance:
 
 Property | Description
 -------- | -----------
-**target** | The DOM element containing the animation's content
-**config** | The config object that the animation was instantiated with
+**target** | The DOM element containing the map's content
+**config** | The config object that the map was instantiated with
 **duration** | The animation's duration in seconds
 
 ## Public Methods
 
-The following public methods are available on your `Animation` instance for controlling its playback once configured:
+The following public methods are available on your `Visualizer` instance for controlling its playback once configured:
 
 Method | Description
 ------ | -----------
@@ -151,7 +151,7 @@ Method | Description
 
 ## Events
 
-You can listen for certain events from your `Animation` instance to perform custom actions. Many events also pass an object as a single argument to their registered callback with additional information about the event. The following events are currently supported:
+You can listen for certain events from your `Visualizer` instance to perform custom actions. Many events also pass an object as a single argument to their registered callback with additional information about the event. The following events are currently supported:
 
 Event | Description
 ----- | -----------
@@ -167,13 +167,13 @@ Event | Description
 
 For instance, to perform an action while loading animation data to update a custom progress indicator in your interface, you would add an observer for the `load:progress` event:
 
-	animation.on('load:progress', function(data) {
+	map.on('load:progress', function(data) {
 		console.log('load progress: ' + data.loaded/data.total);
 	}
 	
-To remove an event listener from your `Animation` instance, simply use `off` instead:
+To remove an event listener from your `Visualizer` instance, simply use `off` instead:
 
-	animation.off('load:progress');
+	map.off('load:progress');
 		
 ## Support
 Review our [complete documentation](http://www.aerisweather.com/support/docs/aeris-maps/) for more details about Aeris Maps and its usage, and feel free to [contact us](http://www.aerisweather.com/support/) with any questions or issues.

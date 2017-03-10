@@ -518,9 +518,9 @@
 	AerisMaps.url = '//{{server}}/{{client_id}}_{{client_secret}}/{{layers}}/{{size}}/{{region}}/{{time}}.{{format}}';
 
 	/**
-	 * Core Map Animation object
+	 * Core Map Visualizer object
 	 */
-	var Animation = function(target, options) {
+	var Visualizer = function(target, options) {
 		var self = this;
 		var config = extend({
 			server: 'maps.aerisapi.com',
@@ -626,9 +626,9 @@
 
 		return this;
 	};
-	extend(Animation.prototype, Events);
+	extend(Visualizer.prototype, Events);
 
-	Animation.prototype.init = function() {
+	Visualizer.prototype.init = function() {
 		if (this.target) {
 			var self = this;
 
@@ -723,7 +723,7 @@
 		}
 	};
 
-	Animation.prototype.startup = function() {
+	Visualizer.prototype.startup = function() {
 		if (!this.config.map.combined) {
 			this._loadBase(this.config.map.layers);
 			this._loadOverlays(this.config.map.layers);
@@ -747,7 +747,7 @@
 		}
 	};
 
-	Animation.prototype.play = function() {
+	Visualizer.prototype.play = function() {
 		if (this.isAnimating()) {
 			return;
 		}
@@ -784,7 +784,7 @@
 		})(this);
 	};
 
-	Animation.prototype.stop = function() {
+	Visualizer.prototype.stop = function() {
 		this.pause(false);
 		this.trigger('stop');
 		this._paused = false;
@@ -794,7 +794,7 @@
 		}
 	};
 
-	Animation.prototype.restart = function() {
+	Visualizer.prototype.restart = function() {
 		this.pause();
 		(function(self) {
 			setTimeout(function() {
@@ -804,7 +804,7 @@
 		})(this);
 	};
 
-	Animation.prototype.pause = function(fireEvents) {
+	Visualizer.prototype.pause = function(fireEvents) {
 		if (fireEvents !== false) {
 			fireEvents = true;
 		}
@@ -820,7 +820,7 @@
 		}
 	};
 
-	Animation.prototype.goToTime = function(time) {
+	Visualizer.prototype.goToTime = function(time) {
 		this._time = isDate(time) ? time.getTime() : time;
 		this._offset = time - this._from;
 
@@ -845,31 +845,31 @@
 		this.trigger('advance', { time: this._time, offset: this._offset });
 	};
 
-	Animation.prototype.isAnimating = function() {
+	Visualizer.prototype.isAnimating = function() {
 		return (this._timer != null);
 	};
 
-	Animation.prototype.isPaused = function() {
+	Visualizer.prototype.isPaused = function() {
 		return this._paused;
 	};
 
-	Animation.prototype.totalTime = function() {
+	Visualizer.prototype.totalTime = function() {
 		return this._to - this._from;
 	};
 
-	Animation.prototype.currentTime = function() {
+	Visualizer.prototype.currentTime = function() {
 		return this._time;
 	};
 
-	Animation.prototype.position = function() {
+	Visualizer.prototype.position = function() {
 		this._offset / this.totalTime();
 	};
 
-	Animation.prototype.startDate = function() {
+	Visualizer.prototype.startDate = function() {
 		return new Date(this._from);
 	};
 
-	Animation.prototype.setStartDate = function(start) {
+	Visualizer.prototype.setStartDate = function(start) {
 		this.stop();
 		this._from = isDate(start) ? start.getTime() : start;
 		this._updateTiming();
@@ -879,18 +879,18 @@
 		this.trigger('start:change', this._from);
 	};
 
-	Animation.prototype.setStartOffset = function(offset) {
+	Visualizer.prototype.setStartOffset = function(offset) {
 		this._fromOffset = offset;
 
 		var now = new Date().getTime();
 		this.setStartDate(now + offset);
 	};
 
-	Animation.prototype.endDate = function() {
+	Visualizer.prototype.endDate = function() {
 		return new Date(this._to);
 	};
 
-	Animation.prototype.setEndDate = function(end) {
+	Visualizer.prototype.setEndDate = function(end) {
 		this.stop();
 		this._to = isDate(end) ? end.getTime() : end;
 		this._updateTiming();
@@ -905,7 +905,7 @@
 		}
 	};
 
-	Animation.prototype.setEndOffset = function(offset) {
+	Visualizer.prototype.setEndOffset = function(offset) {
 		this._toOffset = offset;
 
 		var now = new Date().getTime();
@@ -916,11 +916,11 @@
 	// Private Methods
 	//
 
-	Animation.prototype._updateTiming = function() {
+	Visualizer.prototype._updateTiming = function() {
 		this._increment = ((this._to - this._from) / this.duration) * this._delay;
 	};
 
-	Animation.prototype._intervalClosestToTime = function(time) {
+	Visualizer.prototype._intervalClosestToTime = function(time) {
 		var closest = this._from;
 		var diff = Math.abs(time - closest);
 
@@ -940,7 +940,7 @@
 		return Math.round(closest);
 	};
 
-	Animation.prototype._imageClosestToTime = function(time) {
+	Visualizer.prototype._imageClosestToTime = function(time) {
 		var image = null;
 		var closest = this._from;
 		var diff = Math.abs(time - closest);
@@ -963,7 +963,7 @@
 		return image;
 	};
 
-	Animation.prototype._hasImages = function() {
+	Visualizer.prototype._hasImages = function() {
 		var o = this._images;
 		if (o === null) return false;
 
@@ -976,7 +976,7 @@
 		return hasProps;
 	};
 
-	Animation.prototype._totalImages = function() {
+	Visualizer.prototype._totalImages = function() {
 		var total = 0;
 		for (var i in this._images) {
 			total += 1;
@@ -984,7 +984,7 @@
 		return total;
 	}
 
-	Animation.prototype._updateTimestampOverlay = function(time) {
+	Visualizer.prototype._updateTimestampOverlay = function(time) {
 		if (this._timestamp) {
 			var ts = this.config.overlays.timestamp;
 			var format = null;
@@ -999,7 +999,7 @@
 		}
 	};
 
-	Animation.prototype._timesForIntervals = function() {
+	Visualizer.prototype._timesForIntervals = function() {
 		// if from and to were offsets and not dates, then we need to update the date time values before loading new data
 		var now = new Date().getTime();
 		if (null !== this._fromOffset) {
@@ -1029,7 +1029,7 @@
 		return times;
 	};
 
-	Animation.prototype._loadData = function() {
+	Visualizer.prototype._loadData = function() {
 		var times = this._timesForIntervals();
 
 		this._images = {};
@@ -1062,7 +1062,7 @@
 		loadNextInterval();
 	};
 
-	Animation.prototype._loadInterval = function(interval, cache, callback) {
+	Visualizer.prototype._loadInterval = function(interval, cache, callback) {
 		interval = Math.round(interval);
 
 		// don't reload interval if it already exists in the DOM
@@ -1151,7 +1151,7 @@
 		})(this);
 	};
 
-	Animation.prototype._loadBase = function(layers) {
+	Visualizer.prototype._loadBase = function(layers) {
 		var group = this.layerGroups.base;
 		var layers = filter(layers, function(el) {
 			for (var i = 0, len = group.length; i < len; i += 1) {
@@ -1168,7 +1168,7 @@
 		}
 	};
 
-	Animation.prototype._loadOverlays = function(layers) {
+	Visualizer.prototype._loadOverlays = function(layers) {
 		var group = this.layerGroups.overlay;
 		var layers = filter(layers, function(el) {
 			for (var i = 0, len = group.length; i < len; i += 1) {
@@ -1185,7 +1185,7 @@
 		}
 	};
 
-	Animation.prototype._fetchLayerMetadata = function(callback) {
+	Visualizer.prototype._fetchLayerMetadata = function(callback) {
 		this._isLoadingMetadata = true;
 
 		var self = this;
@@ -1221,7 +1221,7 @@
 		});
 	};
 
-	Animation.prototype._urlForLayers = function(layers, time) {
+	Visualizer.prototype._urlForLayers = function(layers, time) {
 		var opts = this.config;
 		var isBounds = opts.loc.match(/^([0-9\.-]+,){3}[0-9\.-]+$/) != null;
 
@@ -1242,12 +1242,14 @@
 		return url;
 	}
 
-	Animation.prototype._reset = function() {
+	Visualizer.prototype._reset = function() {
 		this._images = {};
 		this._contentTarget.ext.empty();
 	}
 
-	window.AerisMaps.Animation = Animation;
+	window.AerisMaps.Visualizer = Visualizer;
+	// keep Animation reference for backwards compatibility
+	window.AerisMaps.Animation = Visualizer;
 
 	// inject animator CSS into the DOM, but only if it hasn't already been included
 	var css = 'aerismaps-animation.css',

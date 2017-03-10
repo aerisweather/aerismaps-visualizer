@@ -9,8 +9,8 @@ module.exports = function(grunt) {
 				banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
 			},
 			build: {
-				src: 'aerismaps-animation.js',
-				dest: 'aerismaps-animation.min.js'
+				src: 'aerismaps-visualizer.js',
+				dest: 'aerismaps-visualizer.min.js'
 			}
 		}
 	});

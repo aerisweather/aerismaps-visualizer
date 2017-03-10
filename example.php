@@ -25,13 +25,13 @@ $layers = explode(',', $layers);
 <!DOCTYPE html>
 <html>
 <head>
-	<title>AMP Animator Example</title>
+	<title>AMP Visualizer Example</title>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="description" content="Demo project">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
-	<link href="./aerismaps-animation.css" rel="stylesheet" type="text/css">
+	<link href="./aerismaps-visualizer.css" rel="stylesheet" type="text/css">
 	<style type="text/css">
 	body {
 		font-family: "Helvetica","Arial",sans-serif;
@@ -43,11 +43,11 @@ $layers = explode(',', $layers);
 
 <div id="map"></div>
 
-<script type="text/javascript" src="./aerismaps-animation.js"></script>
+<script type="text/javascript" src="./aerismaps-visualizer.js"></script>
 <script type="text/javascript">
 
 var now = new Date();
-var animator = new AerisMaps.Animation('#map', {
+var map = new AerisMaps.Visualizer('#map', {
 	loc: '<?php echo $loc; ?>',
 	keys: {
 		id: '',
@@ -65,17 +65,17 @@ var animator = new AerisMaps.Animation('#map', {
 		duration: <?php echo $duration; ?>
 	},
 	overlays: {
-		title: 'Test Animation'
+		title: 'Test Visualizer'
 	}
 });
 
-animator.on('play', function(data) {
+map.on('play', function(data) {
 	// console.log(data);
 });
-animator.on('advance', function(data) {
+map.on('advance', function(data) {
 	// console.log(data.time);
 });
-animator.on('load:progress', function(data) {
+map.on('load:progress', function(data) {
 	console.log('load progress: ' + data.loaded/data.total);
 });
 
