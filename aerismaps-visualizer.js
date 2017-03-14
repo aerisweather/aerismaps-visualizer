@@ -1251,8 +1251,8 @@
 	// keep Animation reference for backwards compatibility
 	window.AerisMaps.Animation = Visualizer;
 
-	// inject animator CSS into the DOM, but only if it hasn't already been included
-	var css = 'aerismaps-animation.css',
+	// inject visualizer CSS into the DOM, but only if it hasn't already been included
+	var css = 'aerismaps-visualizer.css',
 		links = Dom.select('link'),
 		include = true,
 		re = new RegExp(css);
