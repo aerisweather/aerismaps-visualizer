@@ -1153,6 +1153,8 @@
 
 	Visualizer.prototype._loadBase = function(layers) {
 		var group = this.layerGroups.base;
+		if (!group) { return; }
+
 		var layers = filter(layers, function(el) {
 			for (var i = 0, len = group.length; i < len; i += 1) {
 				if (el.match(new RegExp('^' + group[i])) != null) {
@@ -1170,6 +1172,8 @@
 
 	Visualizer.prototype._loadOverlays = function(layers) {
 		var group = this.layerGroups.overlay;
+		if (!group) { return; }
+
 		var layers = filter(layers, function(el) {
 			for (var i = 0, len = group.length; i < len; i += 1) {
 				if (el.match(new RegExp('^' + group[i])) != null) {
@@ -1201,6 +1205,8 @@
 					}
 					groups[cat].push(el.id);
 				});
+
+				console.log(groups);
 
 				self.layerGroups = groups;
 				self._isLoadingMetadata = false;
