@@ -1200,13 +1200,19 @@
 				var groups = [];
 				data.forEach(function(el) {
 					var cat = el.category;
+
+					// catch to handle new category names in layers.json source that aren't what we expect
+					if (cat.match(/^base/)) {
+						cat = 'base';
+					} else if (cat.match(/overlay/)) {
+						cat = 'overlay';
+					}
+
 					if (undefined == groups[cat]) {
 						groups[cat] = [];
 					}
 					groups[cat].push(el.id);
 				});
-
-				console.log(groups);
 
 				self.layerGroups = groups;
 				self._isLoadingMetadata = false;
