@@ -482,8 +482,10 @@
 		if (typeof selector != 'string') return selector;
 		if (!el) el = document;
 		if (el != document && el != window) {
+			// MS IE and Edge STILL don't support the :scope psuedo selector >:|
+			var isMS = (document.documentMode || /Edge/.test(navigator.userAgent));
 			var scope = selector.match(/^\:scope/);
-			if (!scope || scope.length == 0) {
+			if ((!scope || scope.length == 0) && !isMS) {
 				selector = ':scope ' + selector;
 			}
 		}
