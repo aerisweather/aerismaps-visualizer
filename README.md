@@ -1,3 +1,6 @@
+### This library has been deprecated. Check out [our new JavaScript SDK](https://www.aerisweather.com/support/docs/toolkits/aeris-js-sdk/) instead!
+---
+
 # AerisMaps.Visualizer
 
 A minimal Javascript class for creating, displaying and animating [Aeris Maps (AMP)](http://www.aerisweather.com/develop/maps/) imagery, our powerful and flexible weather mapping platform giving you exactly the weather maps you need.
