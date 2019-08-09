@@ -1019,7 +1019,7 @@
 
 		// calculate time intervals needed
 		var totalIntervals = this._intervals;
-		var interval = Math.round((this._to - this._from) / totalIntervals);
+		var interval = Math.round((this._to - this._from) / (totalIntervals - 1));
 		var times = [];
 		var lastTime = null;
 		for (var i = 0; i < totalIntervals - 1; i++) {
