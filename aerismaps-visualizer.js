@@ -616,6 +616,7 @@
 		this._currentIntervalTime = 0;
 
 		this._isLoadingMetadata = false;
+		this._isLoading = false;
 		this._metadataCallbacks = [];
 
 		if (!config.keys.id || config.keys.id.length == 0 || !config.keys.secret || config.keys.secret.length == 0) {
@@ -750,7 +751,7 @@
 	};
 
 	Visualizer.prototype.play = function() {
-		if (this.isAnimating()) {
+		if (this.isAnimating() || this._isLoading) {
 			return;
 		}
 
@@ -799,7 +800,8 @@
 	Visualizer.prototype.restart = function() {
 		this.pause();
 		(function(self) {
-			setTimeout(function() {
+			if (self._restartTimeout) clearTimeout(self._restartTimeout);
+			self._restartTimeout = setTimeout(function() {
 				self.goToTime(self._from);
 				self.play();
 			}, self._endDelay * 1000);
@@ -816,6 +818,9 @@
 			window.clearInterval(this._timer);
 		}
 		this._timer = null;
+		if (this._restartTimeout) {
+			window.clearTimeout(this._restartTimeout);
+		}
 
 		if (fireEvents) {
 			this.trigger('pause');
@@ -1031,11 +1036,15 @@
 		return times;
 	};
 
+	var _loadTimeout = null;
+	var _startTimeout = null;
 	Visualizer.prototype._loadData = function() {
-		var times = this._timesForIntervals();
+		if (this._isLoading) return;
 
+		this._isLoading = true;
 		this._images = {};
 		this._contentTarget.ext.empty();
+		var times = this._timesForIntervals();
 		this.trigger('load:start', { times: times });
 
 		var self = this;
@@ -1044,12 +1053,14 @@
 			self._loadInterval(times[loadingInterval], true, function() {
 				loadingInterval++;
 				if (loadingInterval >= times.length) {
+					self._isLoading = false;
 					self.trigger('load:done');
 					self.play();
 
 					// start refresh timer if needed
 					if (self.config.refresh > 0) {
-						setTimeout(function() {
+						if (_loadTimeout) clearTimeout(_loadTimeout);
+						_loadTimeout = setTimeout(function() {
 							self.stop();
 							self._loadData();
 						}, self.config.refresh * 1000);
@@ -1061,9 +1072,13 @@
 			});
 		};
 
-		loadNextInterval();
+		if (_startTimeout) clearTimeout(_startTimeout);
+		_startTimeout = setTimeout(function() {
+			loadNextInterval();
+		}, 100);
 	};
 
+	var _loaders = {};
 	Visualizer.prototype._loadInterval = function(interval, cache, callback) {
 		interval = Math.round(interval);
 
@@ -1122,16 +1137,23 @@
 
 		var image = new Image();
 		image.src = url;
+		_loaders[interval] = image;
 		(function(self) {
 			image.onload = function() {
 				if (!self._images) {
 					self._images = {};
 				}
 
+				// remove any existing element that matches
+				var el = Dom.select('#amp-' + interval);
+				if (el && el.length === 1) {
+					el.ext.remove();
+				}
+
 				var img = '<img id="amp-' + interval + '" src="' + image.src + '" width="' + self.config.map.size.width + '" height="' + self.config.map.size.height + '" style="position:absolute;">';
 				self._contentTarget.ext.append(img);
 
-				var el = Dom.select('#amp-' + interval);
+				el = Dom.select('#amp-' + interval);
 				if (el && cache) {
 					if (undefined != el[0]) {
 						el = el[0];
@@ -1149,6 +1171,8 @@
 				if (callback) {
 					callback();
 				}
+
+				_loaders[interval] = null;
 			};
 		})(this);
 	};
@@ -1223,8 +1247,8 @@
 					self._metadataCallbacks.forEach(function(callback) {
 						callback();
 					});
-					self._metadataCallbacks = null;
 				}
+				self._metadataCallbacks = null;
 				if (callback) {
 					callback();
 				}
